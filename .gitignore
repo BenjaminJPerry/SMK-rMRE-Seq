@@ -1,0 +1,8 @@
+results
+resources
+logs
+.snakemake
+fastq
+test
+benchmarks
+samtools*
