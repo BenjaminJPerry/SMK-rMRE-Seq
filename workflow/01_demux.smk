@@ -12,7 +12,7 @@ BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
 LIBRARY = config['library']
 
 
-SAMPLES = function_parse_keyfile() #TODO
+#SAMPLES = function_parse_keyfile() #TODO
 
 
 onstart:
