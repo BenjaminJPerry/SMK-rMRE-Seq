@@ -36,11 +36,11 @@ rule cutadapt: # demultiplexing GBS reads
         barcodes = "resources/barcodes.fasta",
         library = "data/{LIBRARY}.fastq.gz",
     output:
-        demuxed = directory("{PWD}/{LIBRARY}/results/{LIBRARY}"),
+        demuxed = directory("{BASE}/{LIBRARY}/results/{LIBRARY}"),
     container:
         'docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1'
     benchmark:
-        'benchmarks/cutadapt.{library}.txt'
+        'benchmarks/cutadapt.{LIBRARY}.txt'
     threads: 32
     resources:
         mem_gb=8,
