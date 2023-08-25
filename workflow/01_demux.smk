@@ -5,6 +5,8 @@
 # Maintainer: Benjamin J Perry
 # Email: ben.perry@agresearch.co.nz
 
+configfile: "config/config.yaml"
+
 import os
 BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
 LIBRARY = config['library']
