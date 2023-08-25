@@ -6,8 +6,12 @@
 # Email: ben.perry@agresearch.co.nz
 
 import os
+BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
+LIBRARY = config['library']
 
-LIBRARIES, = glob_wildcards("resources/{library}.barcodes.fasta")
+
+SAMPLES = function_parse_keyfile() #TODO
+
 
 onstart:
     print(f"Working directory: {os.getcwd()}")
@@ -23,14 +27,14 @@ onstart:
 
 rule all:
     input:
-        expand("results/{library}", library=LIBRARIES),
+        "{PWD}/{LIBRARY}/results/{LIBRARY}",
 
 rule cutadapt: # demultiplexing GBS reads
     input:
-        barcodes = "resources/{library}.barcodes.fasta",
-        run = "fastq/{library}.fastq.gz",
+        barcodes = "resources/barcodes.fasta",
+        library = "data/{LIBRARY}.fastq.gz",
     output:
-        demuxed = directory("results/{library}"),
+        demuxed = directory("{PWD}/{LIBRARY}/results/{LIBRARY}"),
     container:
         'docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1'
     benchmark:
@@ -41,15 +45,16 @@ rule cutadapt: # demultiplexing GBS reads
         time="01:00:00",
 	partition="large,milan"
     message:
-        'Demultiplexing lanes...'
+        'Demultiplexing {LIBRARY}...'
     shell:
         'mkdir -p {output.demuxed} && '
-        'zcat {input.run} | '
+        'zcat {input.library} | '
         'cutadapt '
         '-j {threads} '
         '--discard-untrimmed '
         '--no-indels '
         '-g ^file:{input.barcodes} '
         r'-o "{output.demuxed}/{{name}}.fastq.gz" '
-        '-'
+        '- && '
+        ' exit 0;'
 
