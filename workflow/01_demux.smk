@@ -65,5 +65,5 @@ rule cutadapt: # demultiplexing GBS reads
         "-g ^file:{input.barcodes} "
         r'-o "{output.demuxed}/{{name}}.fastq.gz" '
         "- && exit 0; "
-        "if [ $? -ne 0 ]; rm -r {output.demuxed}; fi "
+        "if [[] $? -ne 0 ]]; rm -r {output.demuxed}; fi "
 
