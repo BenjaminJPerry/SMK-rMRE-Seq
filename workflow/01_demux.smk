@@ -30,14 +30,14 @@ onstart:
 
 rule all:
     input:
-        BASE + "/{LIBRARY}/results/{LIBRARY}",
+        BASE + expand("/{library}/results/{library}", library = LIBRARY),
 
 rule cutadapt: # demultiplexing GBS reads
     input:
         barcodes = "resources/barcodes.fasta",
-        library = "data/{LIBRARY}.fastq.gz",
+        library = "data/{library}.fastq.gz",
     output:
-        demuxed = directory(BASE + "/{LIBRARY}/results/{LIBRARY}"),
+        demuxed = directory(BASE + "/{library}/results/{library}"),
     container:
         'docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1'
     benchmark:
