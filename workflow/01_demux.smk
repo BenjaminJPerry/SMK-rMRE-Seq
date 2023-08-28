@@ -47,7 +47,7 @@ rule cutadapt: # demultiplexing GBS reads
     resources:
         mem_gb=8,
         time="01:00:00",
-	partition="large,milan"
+	partition="compute"
     shell:
         'mkdir -p {output.demuxed} && '
         'zcat {input.library} | '
