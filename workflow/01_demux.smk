@@ -9,6 +9,7 @@ configfile: "config/config.yaml"
 
 import os
 BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
+
 LIBRARY = config['library']
 
 
@@ -29,14 +30,14 @@ onstart:
 
 rule all:
     input:
-        "{PWD}/{LIBRARY}/results/{LIBRARY}",
+        BASE + "/{LIBRARY}/results/{LIBRARY}",
 
 rule cutadapt: # demultiplexing GBS reads
     input:
         barcodes = "resources/barcodes.fasta",
         library = "data/{LIBRARY}.fastq.gz",
     output:
-        demuxed = directory("{BASE}/{LIBRARY}/results/{LIBRARY}"),
+        demuxed = directory(BASE + "/{LIBRARY}/results/{LIBRARY}"),
     container:
         'docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1'
     benchmark:
