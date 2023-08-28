@@ -41,8 +41,8 @@ rule cutadapt: # demultiplexing GBS reads
         demuxed = directory("results/{library}/01_cutadapt"),
     log:
         "logs/cutadapt.{library}.log.json"
-    container:
-        "docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1"
+    conda:
+        "cutadapt-4.4"
     benchmark:
         "benchmarks/cutadapt.{library}.txt"
     threads: 32
