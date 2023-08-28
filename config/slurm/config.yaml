@@ -12,7 +12,7 @@ cluster:
     --verbose
     --parsable
 default-resources:
-  - account=2023-bjp-rmre-seq
+  - account=perrybe@agresearch.co.nz
   - partition=compute,hugemem
   - time=120
   - mem_gb=8
