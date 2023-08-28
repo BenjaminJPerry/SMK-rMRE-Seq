@@ -54,7 +54,7 @@ rule cutadapt: # demultiplexing GBS reads
         "mkdir -p {output.demuxed} && "
         "zcat {input.library} | "
         "cutadapt "
-        "-json={log} "
+        "--json={log} "
         "-j {threads} "
         "--discard-untrimmed "
         "--length 65 "
