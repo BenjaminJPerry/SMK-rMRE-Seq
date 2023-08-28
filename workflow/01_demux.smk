@@ -30,25 +30,23 @@ onstart:
 
 rule all:
     input:
-        expand("{base}/{library}/results/{library}", library = LIBRARY, base = BASE),
+        expand("results/{library}", library = LIBRARY),
 
 rule cutadapt: # demultiplexing GBS reads
     input:
         barcodes = "resources/barcodes.fasta",
         library = "data/{library}.fastq.gz",
     output:
-        demuxed = directory("{base}/{library}/results/{library}"),
+        demuxed = directory("results/{library}"),
     container:
         'docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1'
     benchmark:
-        'benchmarks/cutadapt.{LIBRARY}.txt'
+        'benchmarks/cutadapt.{library}.txt'
     threads: 32
     resources:
         mem_gb=8,
         time="01:00:00",
 	partition="large,milan"
-    message:
-        'Demultiplexing {LIBRARY}...'
     shell:
         'mkdir -p {output.demuxed} && '
         'zcat {input.library} | '
