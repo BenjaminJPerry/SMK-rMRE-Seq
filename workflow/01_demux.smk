@@ -10,7 +10,7 @@ configfile: "config/config.yaml"
 import os
 BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
 
-LIBRARY = config['library']
+LIBRARY = config["library"]
 
 
 #SAMPLES = function_parse_keyfile() #TODO
@@ -39,24 +39,31 @@ rule cutadapt: # demultiplexing GBS reads
         library = "data/{library}.fastq.gz",
     output:
         demuxed = directory("results/{library}/01_cutadapt"),
+    log:
+        "logs/cutadapt.{library}.log.json"
     container:
-        'docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1'
+        "docker://quay.io/biocontainers/cutadapt:4.1--py310h1425a21_1"
     benchmark:
-        'benchmarks/cutadapt.{library}.txt'
+        "benchmarks/cutadapt.{library}.txt"
     threads: 32
     resources:
         mem_gb=8,
         time="01:00:00",
 	partition="compute"
     shell:
-        'mkdir -p {output.demuxed} && '
-        'zcat {input.library} | '
-        'cutadapt '
-        '-j {threads} '
-        '--discard-untrimmed '
-        '--no-indels '
-        '-g ^file:{input.barcodes} '
-        r'-o "{output.demuxed}/{{name}}.fastq.gz" '
-        '- && '
-        ' exit 0;'
+        "mkdir -p {output.demuxed} && "
+        "zcat {input.library} | "
+        "cutadapt "
+        "-json={log} "
+        "-j {threads} "
+        "--discard-untrimmed "
+        "--length 65 "
+        "-m 50 "
+        "--action retain "
+        "-e 0 "
+        "--no-indels "
+        "-g ^file:{input.barcodes} "
+        r"-o '{output.demuxed}/{{name}}.fastq.gz' "
+        "- && "
+        " exit 0;"
 
