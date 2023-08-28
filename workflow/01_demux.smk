@@ -40,7 +40,7 @@ rule cutadapt: # demultiplexing GBS reads
     output:
         demuxed = directory("results/{library}/01_cutadapt"),
     log:
-        "logs/cutadapt.{library}.log.json"
+        "logs/cutadapt.{library}.log"
     conda:
         "cutadapt-4.4"
     benchmark:
@@ -54,6 +54,7 @@ rule cutadapt: # demultiplexing GBS reads
         "mkdir -p {output.demuxed} && "
         "zcat {input.library} | "
         "cutadapt "
+        "--json={log} "
         "-j {threads} "
         "--discard-untrimmed "
         "--length 65 "
@@ -65,7 +66,6 @@ rule cutadapt: # demultiplexing GBS reads
         "-g ^file:{input.barcodes} "
         r'-o "{output.demuxed}/{{name}}.fastq.gz" '
         "- "
-        "2>&1 {log} "
         "&& exit 0; "
         "if [[ $? -ne 0 ]]; then rm -r {output.demuxed}; fi "
 
