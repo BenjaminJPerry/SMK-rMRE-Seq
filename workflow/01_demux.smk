@@ -33,10 +33,41 @@ rule all:
         expand("results/{library}/01_cutadapt", library = LIBRARY),
 
 
+rule optical_duplicates:
+    input:
+        library = "data/{library}.fastq.gz",
+    output:
+        dedupe = "results/{library}/00_dedupe/{library}.clumpify.{params.distance}.fastq.gz",
+    log:
+        "logs/clumpify.{library}.log"
+    conda:
+        "bbmap"
+    benchmark:
+        "benchmarks/clumpify/clumpify.{library}.txt"
+    threads: 24
+    resources:
+        mem_gb = lambda wildcards, attempt: 80 + ((attempt - 1) * 80),
+        time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
+	    partition="compute"
+    params:
+        distance = "15000"
+
+    shell:
+        "clumpify.sh "
+        "-Xmx{resources.mem_gb}g "
+        "optical "
+        "dedupe "
+        "dupedist={params.distance} "
+        "subs=0 "
+        "in={input.library} "
+        "out={output.dedupe} "
+        "2>&1 {log} "
+
+
 rule cutadapt: # demultiplexing GBS reads
     input:
         barcodes = "resources/barcodes.fasta",
-        library = "data/{library}.fastq.gz",
+        dedupe = "results/{library}/00_dedupe/{library}.clumpify.{params.distance}.fastq.gz",
     output:
         demuxed = directory("results/{library}/01_cutadapt"),
     log:
@@ -47,9 +78,9 @@ rule cutadapt: # demultiplexing GBS reads
         "benchmarks/cutadapt.{library}.txt"
     threads: 32
     resources:
-        mem_gb=8,
-        time="01:00:00",
-	partition="compute"
+        mem_gb = lambda wildcards, attempt: 8 + ((attempt - 1) * 8),
+        time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
+	    partition="compute"
     shell:
         "mkdir -p {output.demuxed} && "
         "zcat {input.library} | "
@@ -59,7 +90,7 @@ rule cutadapt: # demultiplexing GBS reads
         "--discard-untrimmed "
         "--length 65 "
         "-m 50 "
-        "--action=retain "
+        #"--action=retain "
         "-e 0 "
         "-O 5 "
         "--no-indels "
@@ -68,4 +99,5 @@ rule cutadapt: # demultiplexing GBS reads
         "- "
         "&& exit 0; "
         "if [[ $? -ne 0 ]]; then rm -r {output.demuxed}; fi "
+
 
