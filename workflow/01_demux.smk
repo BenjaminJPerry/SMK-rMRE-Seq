@@ -41,7 +41,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
     log:
         "logs/clumpify.{library}.log"
     conda:
-        "bbmap"
+        "bbmap-39.01"
     benchmark:
         "benchmarks/clumpify/clumpify.{library}.txt"
     threads: 24
