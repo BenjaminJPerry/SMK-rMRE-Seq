@@ -35,7 +35,7 @@ rule all:
 
 rule optical_duplicates: # Removing optical duplicates from NovaSeq run
     input:
-        library = "data/{library}.fastq.gz",
+        reads = "data/{library}.fastq.gz",
     output:
         dedupe = "results/{library}/00_dedupe/{library}.clumpify.{params.distance}.fastq.gz",
     log:
@@ -59,7 +59,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
         "dedupe "
         "dupedist={params.distance} "
         "subs=0 "
-        "in={input.library} "
+        "in={input.reads} "
         "out={output.dedupe} "
         "2>&1 {log} "
 
@@ -83,7 +83,7 @@ rule cutadapt: # demultiplexing GBS reads
 	    partition="compute"
     shell:
         "mkdir -p {output.demuxed} && "
-        "zcat {input.library} | "
+        "zcat {input.dedupe} | "
         "cutadapt "
         "--json={log} "
         "-j {threads} "
