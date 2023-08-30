@@ -61,7 +61,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
         "subs=0 "
         "in={input.reads} "
         "out={output.dedupe} "
-        "2>&1 {log} "
+        "2>&1 > {log} "
 
 
 rule cutadapt: # demultiplexing GBS reads
