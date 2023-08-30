@@ -33,7 +33,7 @@ rule all:
         expand("results/{library}/01_cutadapt", library = LIBRARY),
 
 
-rule optical_duplicates:
+rule optical_duplicates: # Removing optical duplicates from NovaSeq run
     input:
         library = "data/{library}.fastq.gz",
     output:
