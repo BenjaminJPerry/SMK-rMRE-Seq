@@ -112,7 +112,7 @@ rule fastqc_reads:
     log:
         "logs/fastqc.{library}.log"
     conda:
-        "fastqc"
+        "fastqc-0.12.1"
     threads:
         24
     resources:
