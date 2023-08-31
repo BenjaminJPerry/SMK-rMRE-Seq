@@ -125,8 +125,8 @@ rule fastqc_reads:
         "mkdir -p {output.fastqc} && "
         "fastqc "
         "-t 24 "
-        "-o {output.fastqc}/*.fastq.gz "
-        "{input.demuxed} "
+        "-o {output.fastqc} "
+        "{input.demuxed}/*.fastq.gz "
         "2>&1 | tee {log} "
 
 
