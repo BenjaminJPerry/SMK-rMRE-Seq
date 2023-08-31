@@ -8,13 +8,11 @@
 configfile: "config/config.yaml"
 
 import os
-from glob import glob
-
 BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
 
 LIBRARY = config["library"]
 
-
+SAMPLES = glob_wildcards("/")
 
 #SAMPLES = function_parse_keyfile() #TODO
 
@@ -34,8 +32,6 @@ onstart:
 rule all:
     input:
         expand("results/{library}/01_cutadapt", library = LIBRARY),
-        expand("results/{library}/00_fastqc", library = LIBRARY),
-
 
 
 rule optical_duplicates: # Removing optical duplicates from NovaSeq run
@@ -104,29 +100,5 @@ rule cutadapt: # demultiplexing GBS reads
         "- "
         "&& exit 0; "
         "if [[ $? -ne 0 ]]; then rm -r {output.demuxed}; fi "
-
-
-rule fastqc_reads:
-    input:
-        demuxed = "results/{library}/01_cutadapt/*.fastq.gz",
-    output:
-        fastqc = directory("results/{library}/00_fastqc")
-    log:
-        "logs/fastqc.{library}.log"
-    conda:
-        "fastqc-0.12.1"
-    threads:
-        24
-    resources:
-        mem_gb = lambda wildcards, attempt: 24 + ((attempt - 1) * 8),
-        time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
-	    partition="compute"
-    shell:
-        "mkdir -p {output.fasqtc} && "
-        "fastqc "
-        "-t 24 "
-        "-o {output.fastqc} "
-        "{input.demuxed} "
-        "2>&1 | tee {log} "
 
 
