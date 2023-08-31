@@ -61,9 +61,12 @@ rule bowtie2:
         time = lambda wildcards, attempt: 120 + ((attempt - 1) * 120),
         partition="compute"
     shell:
-        """
-        bowtie2 --seed 1953 --threads {threads} -x {params.bowtie2_reference} -U {input.demuxed} -b {output.aligned} 2>&1 > {log}
-
-        """
+        "bowtie2 "
+        "--seed 1953 "
+        "--threads {threads} "
+        "-x {params.bowtie2_reference} "
+        "-U {input.demuxed} "
+        "-S {output.aligned} "
+        "2>&1 > {log} "
 
 
