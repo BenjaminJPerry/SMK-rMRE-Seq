@@ -122,7 +122,7 @@ rule fastqc_reads:
         time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
 	    partition="compute"
     shell:
-        "mkdir -p {output.fasqtc} && "
+        "mkdir -p {output.fastqc} && "
         "fastqc "
         "-t 24 "
         "-o {output.fastqc}/*.fastq.gz "
