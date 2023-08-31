@@ -8,6 +8,7 @@
 
 configfile: "config/config.yaml"
 BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
+
 LIBRARY = config["library"]
 
 # def get_library_barcodes(wildcards) # TODO Input function that accepts library, and returns the barcodes to expand with
@@ -38,7 +39,7 @@ wildcard_constraints:
 rule all:
     input:
         expand("results/{library}/02_align/{library}.{barcode}.bam", library = LIBRARY, barcode = BARCODES),
-        expand("results/{library}/00_stats/{library}.{barcode}.samtools.stats.txt", library = LIBRARY, barcode = BARCODES),
+        # expand("results/{library}/00_stats/{library}.{barcode}.samtools.stats.txt", library = LIBRARY, barcode = BARCODES),
 
 
 rule bowtie2:
