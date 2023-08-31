@@ -67,7 +67,7 @@ rule bowtie2:
         "-x {params.bowtie2_reference} "
         "-U {input.demuxed} "
         "-S {output.aligned} "
-        "2>&1 | tee {log} "
+        " | tee {log} "
 
 
 rule bam_stats:

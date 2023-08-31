@@ -65,7 +65,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
         "subs=0 "
         "in={input.reads} "
         "out={output.dedupe} "
-        "2>&1 > {log} "
+        " | tee {log} "
 
 
 rule adapter_trimming: # Removing Illumina sequencing adapters
@@ -132,8 +132,7 @@ rule cutadapt: # demultiplexing GBS reads
         "-g ^file:{input.barcodes} "
         r'-o "{output.demuxed}/{wildcards.library}.{{name}}.fastq.gz" '
         "- "
-        "&& exit 0; "
-        "if [[ $? -ne 0 ]]; then rm -r {output.demuxed}; fi "
+        " | tee {log} "
 
 
 rule fastqc_reads:
@@ -157,6 +156,6 @@ rule fastqc_reads:
         "-t 24 "
         "-o {output.fastqc} "
         "{input.demuxed}/*.fastq.gz "
-        "2>&1 | tee {log} "
+        " | tee {log} "
 
 
