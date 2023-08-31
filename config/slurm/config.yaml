@@ -1,6 +1,6 @@
 # Based on: https://github.com/jdblischak/smk-simple-slurm
 cluster:
-  mkdir -p logs/{rule} &&
+  mkdir -p logs/slurm &&
   sbatch
     --account={resources.account}
     --partition={resources.partition}
