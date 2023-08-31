@@ -42,21 +42,20 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
     input:
         reads = "data/{library}.fastq.gz",
     output:
-        dedupe = "results/{library}/00_dedupe/{library}.clumpify.{params.distance}.fastq.gz",
+        dedupe = "results/{library}/00_dedupe/{library}.clumpify-15000.fastq.gz", #TODO Find a way to link with params; SMK issue on Github requesting this currently
     log:
-        "logs/clumpify.{library}.log"
-    conda:
-        "bbmap-39.01"
+        "logs/clumpify/clumpify.{library}.log"
     benchmark:
         "benchmarks/clumpify/clumpify.{library}.txt"
+    conda:
+        "bbmap-39.01"
     threads: 24
     resources:
         mem_gb = lambda wildcards, attempt: 80 + ((attempt - 1) * 80),
         time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
 	    partition="compute"
     params:
-        distance = "15000"
-
+        distance = "15000" #TODO Move to config
     shell:
         "clumpify.sh "
         "-Xmx{resources.mem_gb}g "
@@ -69,13 +68,13 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
         "2>&1 > {log} "
 
 
-rule adapter_trimming: # Removing illumina sequencing adapters
+rule adapter_trimming: # Removing Illumina sequencing adapters
     input:
-        dedupe = "results/{library}/00_dedupe/{library}.clumpify.{params.distance}.fastq.gz",
+        dedupe = "results/{library}/00_dedupe/{library}.clumpify-15000.fastq.gz", 
     output:
-        trimmed = "results/{library}/00_trimmed/{library}.clumpify.{params.distance}.trimmed.fastq.gz",
+        trimmed = "results/{library}/00_trimmed/{library}.clumpify-15000.trimmed.fastq.gz",
     log:
-        "logs/trimming.{library}.log"
+        "logs/bbduk/bbduk.trimming.{library}.log"
     conda:
         "bbmap-39.01"
     threads: 24
@@ -84,12 +83,13 @@ rule adapter_trimming: # Removing illumina sequencing adapters
         time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
 	    partition="compute"
     params:
-        adapters = "adapters.fasta"
+        adapters = "resources/illumina_adapters.fasta"
     shell:
         "bbduk.sh "
         "-Xmx{resources.mem_gb}g "
+        "stats={log} "
         "in={input.dedupe} "
-        "adapters=resources/illumina_adapters.fasta "
+        "adapters={params.adapters} "
         "ktrim=r "
         "ktrim=r "
         "k=23 "
@@ -97,21 +97,20 @@ rule adapter_trimming: # Removing illumina sequencing adapters
         "hdist=1 "
         "trimpolygright=9 "
         "out={output.trimmed} "
-        "| tee {log} "
 
 
 rule cutadapt: # demultiplexing GBS reads
     input:
         barcodes = "resources/barcodes.fasta",
-        trimmed = "results/{library}/00_trimmed/{library}.clumpify.{params.distance}.trimmed.fastq.gz",
+        trimmed = "results/{library}/00_trimmed/{library}.clumpify-15000.trimmed.fastq.gz",
     output:
         demuxed = directory("results/{library}/01_cutadapt"),
     log:
-        "logs/cutadapt.{library}.log"
-    conda:
-        "cutadapt-4.4"
+        "logs/cutadapt/cutadapt.{library}.log"
     benchmark:
         "benchmarks/cutadapt.{library}.txt"
+    conda:
+        "cutadapt-4.4"
     threads: 32
     resources:
         mem_gb = lambda wildcards, attempt: 8 + ((attempt - 1) * 8),
@@ -143,7 +142,7 @@ rule fastqc_reads:
     output:
         fastqc = directory("results/{library}/00_fastqc")
     log:
-        "logs/fastqc.{library}.log"
+        "logs/fastqc/fastqc.{library}.log"
     conda:
         "fastqc-0.12.1"
     threads:

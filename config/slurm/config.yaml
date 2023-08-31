@@ -8,7 +8,7 @@ cluster:
     --mem="{resources.mem_gb}G"
     --job-name=smk-{rule}-{wildcards}
     --time={resources.time}
-    --output=logs/{rule}/{rule}-{wildcards}-%j.out
+    --output=logs/slurm/{rule}-{wildcards}-%j.log
     --verbose
     --parsable
 default-resources:
