@@ -97,7 +97,7 @@ rule adapter_trimming: # Removing illumina sequencing adapters
         "hdist=1 "
         "trimpolygright=9 "
         "out={output.trimmed} "
-        "> tee {log} "
+        "| tee {log} "
 
 
 rule cutadapt: # demultiplexing GBS reads
