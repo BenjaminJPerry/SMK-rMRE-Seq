@@ -13,6 +13,7 @@ BASE = "/agr/persist/projects/2023-bjp-rmre-seq/SMK-rMRE-Seq"
 LIBRARY = config["library"]
 
 
+
 #SAMPLES = function_parse_keyfile() #TODO
 
 
@@ -31,6 +32,8 @@ onstart:
 rule all:
     input:
         expand("results/{library}/01_cutadapt", library = LIBRARY),
+        expand("results/{library}/00_fastqc", library = LIBRARY),
+
 
 
 rule optical_duplicates: # Removing optical duplicates from NovaSeq run
@@ -99,5 +102,27 @@ rule cutadapt: # demultiplexing GBS reads
         "- "
         "&& exit 0; "
         "if [[ $? -ne 0 ]]; then rm -r {output.demuxed}; fi "
+
+
+rule fastqc_reads:
+    input:
+        demuxed = directory("results/{library}/01_cutadapt"),
+    output:
+        fastqc = directory("results/{library}/00_fastqc")
+    log:
+        "logs/fastqc.{library}.log"
+    conda:
+        "fastqc"
+    threads:
+        24
+    resources:
+        mem_gb = lambda wildcards, attempt: 24 + ((attempt - 1) * 8),
+        time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
+	    partition="compute"
+    shell:
+        "fastqc "
+        "-t 24 "
+        "-o {output.fastqc} "
+        "{input.demuxed}/*.fastq.gz "
 
 
