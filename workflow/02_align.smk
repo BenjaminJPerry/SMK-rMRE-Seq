@@ -55,7 +55,7 @@ rule bowtie2:
         'bowtie2-2.5.1'
     threads: 16
     params:
-        bowtie2_reference: "resources/reference/GCF_016772045.1/GCF_016772045.1_ARS-UI_Ramb_v2.0", #TODO pass via config for CLI integration
+        bowtie2_reference = "resources/reference/GCF_016772045.1/GCF_016772045.1_ARS-UI_Ramb_v2.0", #TODO pass via config for CLI integration
     resources:
         mem_gb = lambda wildcards, attempt: 12 + ((attempt - 1) * 12),
         time = lambda wildcards, attempt: 120 + ((attempt - 1) * 120),
