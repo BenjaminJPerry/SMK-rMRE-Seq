@@ -67,6 +67,6 @@ rule bowtie2:
         "-x {params.bowtie2_reference} "
         "-U {input.demuxed} "
         "-S {output.aligned} "
-        "2>&1 > {log} "
+        "2>&1 tee {log} "
 
 
