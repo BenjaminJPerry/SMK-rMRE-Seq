@@ -124,5 +124,6 @@ rule fastqc_reads:
         "-t 24 "
         "-o {output.fastqc} "
         "{input.demuxed}/*.fastq.gz "
+        "2>&1 | tee {log} "
 
 
