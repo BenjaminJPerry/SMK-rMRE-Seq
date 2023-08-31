@@ -38,7 +38,7 @@ wildcard_constraints:
 
 rule all:
     input:
-        expand("results/{library}/02_align/{library}.{barcode}.bam", library = LIBRARY, barcode = BARCODES),
+        expand("results/{library}/02_align/{library}.{barcode}.sam", library = LIBRARY, barcode = BARCODES),
         # expand("results/{library}/00_stats/{library}.{barcode}.samtools.stats.txt", library = LIBRARY, barcode = BARCODES),
 
 
@@ -46,7 +46,7 @@ rule bowtie2:
     input:
         demuxed = "results/{library}/01_cutadapt/{library}.{barcode}.fastq.gz"
     output:
-        aligned = "results/{library}/02_align/{library}.{barcode}.bam",
+        aligned = "results/{library}/02_align/{library}.{barcode}.sam",
     log:
         "logs/bowtie2/bowtie2.{library}.{barcode}.log"
     benchmark:
