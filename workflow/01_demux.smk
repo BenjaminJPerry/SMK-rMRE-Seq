@@ -106,7 +106,7 @@ rule cutadapt: # demultiplexing GBS reads
 
 rule fastqc_reads:
     input:
-        demuxed = directory("results/{library}/01_cutadapt"),
+        demuxed = "results/{library}/01_cutadapt",
     output:
         fastqc = directory("results/{library}/00_fastqc")
     log:
