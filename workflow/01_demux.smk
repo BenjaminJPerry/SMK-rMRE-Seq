@@ -108,7 +108,7 @@ rule cutadapt: # demultiplexing GBS reads
 
 rule fastqc_reads:
     input:
-        demuxed = "results/{library}/01_cutadapt/*.fastq.gz",
+        demuxed = "results/{library}/01_cutadapt",
     output:
         fastqc = directory("results/{library}/00_fastqc")
     log:
@@ -125,7 +125,7 @@ rule fastqc_reads:
         "mkdir -p {output.fasqtc} && "
         "fastqc "
         "-t 24 "
-        "-o {output.fastqc} "
+        "-o {output.fastqc}/*.fastq.gz "
         "{input.demuxed} "
         "2>&1 | tee {log} "
 
