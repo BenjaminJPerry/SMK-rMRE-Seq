@@ -69,10 +69,41 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
         "2>&1 > {log} "
 
 
+rule adapter_trimming: # Removing illumina sequencing adapters
+    input:
+        dedupe = "results/{library}/00_dedupe/{library}.clumpify.{params.distance}.fastq.gz",
+    output:
+        trimmed = "results/{library}/00_trimmed/{library}.clumpify.{params.distance}.trimmed.fastq.gz",
+    log:
+        "logs/trimming.{library}.log"
+    conda:
+        "bbmap-39.01"
+    threads: 24
+    resources:
+        mem_gb = lambda wildcards, attempt: 80 + ((attempt - 1) * 80),
+        time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
+	    partition="compute"
+    params:
+        adapters = "adapters.fasta"
+    shell:
+        "bbduk.sh "
+        "-Xmx{resources.mem_gb}g "
+        "in={input.dedupe} "
+        "adapters=resources/illumina_adapters.fasta "
+        "ktrim=r "
+        "ktrim=r "
+        "k=23 "
+        "mink=8 "
+        "hdist=1 "
+        "trimpolygright=9 "
+        "out={output.trimmed} "
+        "> tee {log} "
+
+
 rule cutadapt: # demultiplexing GBS reads
     input:
         barcodes = "resources/barcodes.fasta",
-        dedupe = "results/{library}/00_dedupe/{library}.clumpify.{params.distance}.fastq.gz",
+        trimmed = "results/{library}/00_trimmed/{library}.clumpify.{params.distance}.trimmed.fastq.gz",
     output:
         demuxed = directory("results/{library}/01_cutadapt"),
     log:
@@ -88,13 +119,13 @@ rule cutadapt: # demultiplexing GBS reads
 	    partition="compute"
     shell:
         "mkdir -p {output.demuxed} && "
-        "zcat {input.dedupe} | "
+        "zcat {input.trimmed} | "
         "cutadapt "
         "--json={log} "
         "-j {threads} "
         "--discard-untrimmed "
         "--length 65 "
-        "-m 50 "
+        "-m 25 "
         #"--action=retain "
         "-e 0 "
         "-O 5 "
