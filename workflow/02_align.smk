@@ -38,21 +38,21 @@ wildcard_constraints:
 
 rule all:
     input:
-        expand("results/{library}/02_align/{library}.{barcode}.sam", library = LIBRARY, barcode = BARCODES),
-        # expand("results/{library}/00_stats/{library}.{barcode}.samtools.stats.txt", library = LIBRARY, barcode = BARCODES),
+        expand("results/{library}/02_align/{library}.{barcode}.bam", library = LIBRARY, barcode = BARCODES),
+        expand("results/{library}/00_stats/{library}.{barcode}.bam.stats", library = LIBRARY, barcode = BARCODES),
 
 
 rule bowtie2:
     input:
         demuxed = "results/{library}/01_cutadapt/{library}.{barcode}.fastq.gz"
     output:
-        aligned = "results/{library}/02_align/{library}.{barcode}.sam",
+        aligned = temp("results/{library}/02_align/{library}.{barcode}.sam"),
     log:
         "logs/bowtie2/bowtie2.{library}.{barcode}.log"
     benchmark:
-        'benchmarks/bowtie2.{library}.{barcode}.txt'
+        "benchmarks/bowtie2.{library}.{barcode}.txt"
     conda:
-        'bowtie2-2.5.1'
+        "bowtie2-2.5.1"
     threads: 16
     params:
         bowtie2_reference = "resources/reference/GCF_016772045.1/GCF_016772045.1_ARS-UI_Ramb_v2.0", #TODO pass via config for CLI integration
@@ -71,3 +71,26 @@ rule bowtie2:
 
 
 rule bam_stats:
+    input:
+        aligned = "results/{library}/02_align/{library}.{barcode}.sam",
+    output:
+        bam = "results/{library}/02_align/{library}.{barcode}.bam",
+        stats = "results/{library}/00_stats/{library}.{barcode}.bam.stats",
+    conda:
+        "samtools-1.17"
+    threads: 16
+    params:
+        reference = "resources/reference/GCF_016772045.1/GCF_016772045.1_ARS-UI_Ramb_v2.0_genomic.fna", #TODO pass via config for CLI integration
+    resources:
+        mem_gb = lambda wildcards, attempt: 12 + ((attempt - 1) * 12),
+        time = lambda wildcards, attempt: 120 + ((attempt - 1) * 120),
+        partition="compute"
+    shell:
+        """
+        samtools view -b {input.aligned} > {output.bam} &&
+
+        samtools index {output.bam};
+        
+        samtools stats --threads {threads} -r {params.reference} {output.bam} > {output.stats}; 
+        
+        """
