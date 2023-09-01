@@ -65,7 +65,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
         "subs=0 "
         "in={input.reads} "
         "out={output.dedupe} "
-        " | tee {log} "
+        "2> {log} "
 
 
 rule adapter_trimming: # Removing Illumina sequencing adapters
