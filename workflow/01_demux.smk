@@ -44,7 +44,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
     output:
         dedupe = "results/{library}/00_dedupe/{library}.clumpify-15000.fastq.gz", #TODO Find a way to link with params; SMK issue on Github requesting this currently
     log:
-        "logs/clumpify/clumpify.{library}.log"
+        "logs/clumpify/{library}.clumpify.log"
     benchmark:
         "benchmarks/clumpify/clumpify.{library}.txt"
     conda:
@@ -74,7 +74,7 @@ rule adapter_trimming: # Removing Illumina sequencing adapters
     output:
         trimmed = "results/{library}/00_trimmed/{library}.clumpify-15000.trimmed.fastq.gz",
     log:
-        "logs/bbduk/bbduk.trimming.{library}.log"
+        "logs/bbduk/{library}.bbduk.trimming.log"
     conda:
         "bbmap-39.01"
     threads: 24
@@ -106,7 +106,7 @@ rule cutadapt: # demultiplexing GBS reads
     output:
         demuxed = directory("results/{library}/01_cutadapt"),
     log:
-        "logs/cutadapt/cutadapt.{library}.log"
+        "logs/cutadapt/{library}.cutadapt.log"
     benchmark:
         "benchmarks/cutadapt.{library}.txt"
     conda:
@@ -120,7 +120,7 @@ rule cutadapt: # demultiplexing GBS reads
         "mkdir -p {output.demuxed} && "
         "zcat {input.trimmed} | "
         "cutadapt "
-        "--json={log} "
+        #"--json={log} "
         "-j {threads} "
         "--discard-untrimmed "
         "--length 65 "
@@ -141,7 +141,7 @@ rule fastqc_reads:
     output:
         fastqc = directory("results/{library}/00_fastqc")
     log:
-        "logs/fastqc/fastqc.{library}.log"
+        "logs/fastqc/{library}.fastqc.log"
     conda:
         "fastqc-0.12.1"
     threads:
