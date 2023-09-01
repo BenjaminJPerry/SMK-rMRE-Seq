@@ -42,7 +42,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
     input:
         reads = "data/{library}.fastq.gz",
     output:
-        dedupe = "results/{library}/00_dedupe/{library}.clumpify-15000.fastq.gz", #TODO Find a way to link with params; SMK issue on Github requesting this currently
+        dedupe = "results/{library}/00_dedupe/{library}.clumpify-12000.fastq.gz", #TODO Find a way to link with params; SMK issue on Github requesting this currently
     log:
         "logs/clumpify/{library}.clumpify.log"
     benchmark:
@@ -55,7 +55,7 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
         time = lambda wildcards, attempt: 240 + ((attempt - 1) * 120),
 	    partition="compute"
     params:
-        distance = "15000" #TODO Move to config
+        distance = "12000" #TODO Move to config
     shell:
         "clumpify.sh "
         "-Xmx{resources.mem_gb}g "
@@ -70,9 +70,9 @@ rule optical_duplicates: # Removing optical duplicates from NovaSeq run
 
 rule adapter_trimming: # Removing Illumina sequencing adapters
     input:
-        dedupe = "results/{library}/00_dedupe/{library}.clumpify-15000.fastq.gz", 
+        dedupe = "results/{library}/00_dedupe/{library}.clumpify-12000.fastq.gz", 
     output:
-        trimmed = "results/{library}/00_trimmed/{library}.clumpify-15000.trimmed.fastq.gz",
+        trimmed = "results/{library}/00_trimmed/{library}.clumpify-12000.trimmed.fastq.gz",
     log:
         "logs/bbduk/{library}.bbduk.trimming.log"
     conda:
@@ -102,7 +102,7 @@ rule adapter_trimming: # Removing Illumina sequencing adapters
 rule cutadapt: # demultiplexing GBS reads
     input:
         barcodes = "resources/barcodes.fasta",
-        trimmed = "results/{library}/00_trimmed/{library}.clumpify-15000.trimmed.fastq.gz",
+        trimmed = "results/{library}/00_trimmed/{library}.clumpify-12000.trimmed.fastq.gz",
     output:
         demuxed = directory("results/{library}/01_cutadapt"),
     log:
