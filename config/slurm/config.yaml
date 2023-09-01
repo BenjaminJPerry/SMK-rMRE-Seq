@@ -30,4 +30,5 @@ reason: True
 conda-frontend: conda
 cluster-status: scripts/status.py
 cluster-cancel: scancel
+max-status-checks-per-second: 5
 # rerun-trigger: mtime
