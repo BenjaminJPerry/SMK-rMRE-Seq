@@ -48,7 +48,7 @@ rule bowtie2:
     output:
         aligned = temp("results/{library}/02_align/{library}.{barcode}.sam"),
     log:
-        "logs/bowtie2/bowtie2.{library}.{barcode}.log"
+        "logs/bowtie2/{library}.{barcode}.bowtie2.log"
     benchmark:
         "benchmarks/bowtie2.{library}.{barcode}.txt"
     conda:
