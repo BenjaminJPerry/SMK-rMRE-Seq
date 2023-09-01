@@ -87,7 +87,7 @@ rule bam_stats:
         partition="compute"
     shell:
         """
-        samtools view -b {input.aligned} > {output.bam} &&
+        samtools sort {input.aligned} | samtools view -b > {output.bam} &&
 
         samtools index {output.bam};
         
