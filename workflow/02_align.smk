@@ -40,6 +40,7 @@ rule all:
     input:
         expand("results/{library}/02_align/{library}.{barcode}.bam", library = LIBRARY, barcode = BARCODES),
         expand("results/{library}/00_stats/{library}.{barcode}.bam.stats", library = LIBRARY, barcode = BARCODES),
+        expand("results/{library}/02_align/{library}.{barcode}.bed.gz", library = LIBRARY, barcode = BARCODES),
 
 
 rule bowtie2:
