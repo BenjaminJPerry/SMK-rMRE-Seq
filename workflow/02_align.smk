@@ -94,3 +94,24 @@ rule bam_stats:
         samtools stats --threads {threads} -r {params.reference} {output.bam} > {output.stats}; 
         
         """
+
+
+rule bam_to_bed:
+    input:
+        bam = "results/{library}/02_align/{library}.{barcode}.bam",
+    output:
+        bed = "results/{library}/02_align/{library}.{barcode}.bed.gz",
+    conda:
+        "bedtools-2.31.0"
+    threads: 16
+    params:
+    resources:
+        mem_gb = lambda wildcards, attempt: 12 + ((attempt - 1) * 12),
+        time = lambda wildcards, attempt: 120 + ((attempt - 1) * 120),
+        partition="compute"
+    shell:
+        "bedtools "
+        "bamtobed "
+        "-i {input.bam} "
+        "| gzip > {output.bed} "
+        
