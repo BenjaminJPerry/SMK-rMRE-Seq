@@ -20,6 +20,7 @@ def get_options():
     utilities_parser = main_parser.add_subparsers(title = "utilities", 
                                                   dest = 'task')
 
+
     parser_methyl = utilities_parser.add_parser("bed-to-CH4",
                                         description="Convert alignment .bed file into .CH4.bed file")
     parser_methyl.add_argument('-i', '--input',
@@ -60,58 +61,103 @@ def get_options():
 
 
 
-# def splice_sample_names(args):
-#     """
-#     for each file, parse the filename to get sampleID and locusID,
-#     then parse the file contents and splice these in and list, print
-#     updated summary table to stdout.
-#     """
-#     for path in args["input_files"]:
-#         # parse the filename to get sampleID and locusID parts
-#         # e.g. from HERB01-A07-J11-65-14_S27_EPSPS.summary.txt we want to be
-#         # able to extract HERB01-A07-J11-65-14  EPSPS try each regular
-#         # expression (not case-sensitive) and use the first match
-#         # (usually there will be only one regexp and usually the default)
-#         sample_name = None
-#         locus = None
+def bedtomethyl(bedfile):
+    """ ('path/to/bedfile.bed') -> methylbed[]
+    :param bedfile: String; path to an input bedfile.
+    :return: dict[pos]; Tn5 insertion positions of all reads.
 
-#         for regexp in args["regexps"]:
-#             match = re.search(regexp, os.path.basename(path), re.IGNORECASE)
-#             if match is not None:
-#                 if len(match.groups()) == 2:
-#                     (sample_name, locus) = match.groups()
+    Parses a bedfile from Tn5 Tnseq and returns a list of
+    genomic coordinates offset by 9 bp for  Tn5 insertion positions.
+    Takes into account the strand the read was mapped to.
+    """
+    # Open input bedfile
+    bedfileIn = open(bedfile, 'r')
 
-#         if sample_name is None or locus is None:
-#             raise Exception(
-#                 "Sorry could not parse sampleID and locusID from %s using any of : %s" % (
-#                     path, str(args["regexps"])))
+    # Process input bedfile
+    bedfileData = []
+    for line in bedfileIn:
+        items = line.rstrip('\r\n').split('\t')
+        items = [item.strip() for item in items]
+        bedfileData.append(items)
 
-#         # now open file, parse contents and splice in sample name and locus
-#         # file contents are like :
-#         # more /dataset/gseq_processing/active/bin/gtseq_prism/unit_test/HERB01-A07-J11-65-14_S27_ACCase1999.summary.txt
-#         # 0.0000  ATTCCCATGAGCGGTCTGTTCCTCGTGCTGGGCAAGTCTGGTTTCCAGATTCTGCTACCAAGACAGCGCAGGCAATGTTGGACTTCAA;size=2072      *       *       *       *       *       *       *       *       0       0   00       0       0       *       N
-#         # 0.0000  ATTCCCATGAGCGGTCTGTTTCTCGTGCTGGGCAAGTCTGGTTTCCAGATTCTGCTACCAAGACAGCGCAGGCAATGTTGGACTTCAA;size=42        *       *       *       *       *       *       *       *       0       0   00       0       0       *       N
-#         with open(path, "r") as savs:
-#             record_count = 0
-#             field_count = 0
-#             for record in savs:
-#                 fields = re.split("\t", record.strip())
-#                 if record_count == 0:
-#                     field_count = len(fields)
-#                 record_count += 1
-#                 # sanity check file - records should all be the same length
-#                 if len(fields) != field_count:
-#                     raise Exception(
-#                         "oops : in %s, first rec had %d fields, but record %d has %d fields" % (
-#                             path, field_count, len(fields)))
-#                 allele_and_size = re.split(";", fields[1])
-#                 if len(allele_and_size) != 2:
-#                     raise Exception(
-#                         "oops : malformed sampleID field (%s) in record %d" %
-#                         fields[1], record_count)
-#                 (allele, size) = allele_and_size
-#                 # output record , e.g. like CCCGATTGAGAAGGATGCCAAGGAGGAAGTAAAGCTCTTCTTGGGCAACGCTGGAACTGCAATGCGGCCATTGACGGCAGCTGTAGTAGCTGCTGGTGGA  size=1125  HERB01-A07-J11-65-14  EPSPS
-#                 print(allele, size, sample_name, locus, sep="\t")
+    # Process tntag start positions
+    tntagsList = []
+    i = 0
+    errors = 0
+    for line in bedfileData:
+        if str(line[5]) == '+':
+            position = int(line[1])
+            position = position + 1  # offsets python counting from 0
+            position = position + 9  # offsets 9 bp duplication from Tn5
+            tntagsList.append(position)
+            i += 1
+        elif str(line[5]) == '-':
+            position = int(line[2])
+            position = position - 1  # offsets python counting from 0
+            position = position - 9  # offsets 9 bp duplication from Tn5
+            tntagsList.append(position)
+            i += 1
+        else:
+            errors += 1
+    print("Reads processed " + str(i))
+    print("Errors " + str(errors))
+
+    return tntagsList
+
+
+
+def splice_sample_names(args):
+    """
+    for each file, parse the filename to get sampleID and locusID,
+    then parse the file contents and splice these in and list, print
+    updated summary table to stdout.
+    """
+    for path in args["input_files"]:
+        # parse the filename to get sampleID and locusID parts
+        # e.g. from HERB01-A07-J11-65-14_S27_EPSPS.summary.txt we want to be
+        # able to extract HERB01-A07-J11-65-14  EPSPS try each regular
+        # expression (not case-sensitive) and use the first match
+        # (usually there will be only one regexp and usually the default)
+        sample_name = None
+        locus = None
+
+        for regexp in args["regexps"]:
+            match = re.search(regexp, os.path.basename(path), re.IGNORECASE)
+            if match is not None:
+                if len(match.groups()) == 2:
+                    (sample_name, locus) = match.groups()
+
+        if sample_name is None or locus is None:
+            raise Exception(
+                "Sorry could not parse sampleID and locusID from %s using any of : %s" % (
+                    path, str(args["regexps"])))
+
+        # now open file, parse contents and splice in sample name and locus
+        # file contents are like :
+        # more /dataset/gseq_processing/active/bin/gtseq_prism/unit_test/HERB01-A07-J11-65-14_S27_ACCase1999.summary.txt
+        # 0.0000  ATTCCCATGAGCGGTCTGTTCCTCGTGCTGGGCAAGTCTGGTTTCCAGATTCTGCTACCAAGACAGCGCAGGCAATGTTGGACTTCAA;size=2072      *       *       *       *       *       *       *       *       0       0   00       0       0       *       N
+        # 0.0000  ATTCCCATGAGCGGTCTGTTTCTCGTGCTGGGCAAGTCTGGTTTCCAGATTCTGCTACCAAGACAGCGCAGGCAATGTTGGACTTCAA;size=42        *       *       *       *       *       *       *       *       0       0   00       0       0       *       N
+        with open(path, "r") as savs:
+            record_count = 0
+            field_count = 0
+            for record in savs:
+                fields = re.split("\t", record.strip())
+                if record_count == 0:
+                    field_count = len(fields)
+                record_count += 1
+                # sanity check file - records should all be the same length
+                if len(fields) != field_count:
+                    raise Exception(
+                        "oops : in %s, first rec had %d fields, but record %d has %d fields" % (
+                            path, field_count, len(fields)))
+                allele_and_size = re.split(";", fields[1])
+                if len(allele_and_size) != 2:
+                    raise Exception(
+                        "oops : malformed sampleID field (%s) in record %d" %
+                        fields[1], record_count)
+                (allele, size) = allele_and_size
+                # output record , e.g. like CCCGATTGAGAAGGATGCCAAGGAGGAAGTAAAGCTCTTCTTGGGCAACGCTGGAACTGCAATGCGGCCATTGACGGCAGCTGTAGTAGCTGCTGGTGGA  size=1125  HERB01-A07-J11-65-14  EPSPS
+                print(allele, size, sample_name, locus, sep="\t")
 
 
 def main():
