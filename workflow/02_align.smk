@@ -132,7 +132,7 @@ rule bed_to_CH4:
         time = lambda wildcards, attempt: 4 + ((attempt - 1) * 60),
         partition="compute"
     shell:
-        "scripts/rmre-seq.py "
+        "python scripts/rmre-seq.py "
         "bed-to-CH4 "
         "--header "
         "-q 20 "
