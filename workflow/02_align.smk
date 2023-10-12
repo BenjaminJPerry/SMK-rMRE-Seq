@@ -65,7 +65,6 @@ rule bowtie2:
         "bowtie2 "
         "--seed 1953 "
         "--threads {threads} "
-        "-- "
         "-x {params.bowtie2_reference} "
         "-U {input.demuxed} "
         "-S {output.aligned} "
