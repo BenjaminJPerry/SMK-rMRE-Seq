@@ -40,7 +40,7 @@ rule all:
     input:
         expand("results/{library}/02_align/{library}.{barcode}.bam", library = LIBRARY, barcode = BARCODES),
         expand("results/{library}/00_stats/{library}.{barcode}.bam.stats", library = LIBRARY, barcode = BARCODES),
-        expand("results/{library}/02_align/{library}.{barcode}.bed.gz", library = LIBRARY, barcode = BARCODES),
+        expand("results/{library}/03_CH4/{library}.{barcode}.CH4.bed.gz", library = LIBRARY, barcode = BARCODES),
 
 
 rule bowtie2:
@@ -115,4 +115,26 @@ rule bam_to_bed:
         "bamtobed "
         "-i {input.bam} "
         "| gzip > {output.bed} "
-        
+
+
+rule bed_to_CH4:
+    input:
+        bed = "results/{library}/02_align/{library}.{barcode}.bed.gz",
+    output:
+        CH4 = "results/{library}/03_CH4/{library}.{barcode}.CH4.bed.gz",
+    conda:
+        "rmre-seq"
+    benchmark:
+        "benchmarks/bed_to_CH4.{library}.{barcode}.txt"
+    threads: 2
+    resources:
+        mem_gb = lambda wildcards, attempt: 6 + ((attempt - 1) * 12),
+        time = lambda wildcards, attempt: 4 + ((attempt - 1) * 60),
+        partition="compute"
+    shell:
+        "scripts/rmre-seq.py "
+        "bed-to-CH4 "
+        "--header "
+        "-q 20 "
+        "-i {input.bed} "
+        "-o {output.CH4} "
