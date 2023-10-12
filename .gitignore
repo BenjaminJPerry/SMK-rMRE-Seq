@@ -6,3 +6,5 @@ fastq
 test
 benchmarks
 samtools*
+*.bed.gz
+test*

@@ -12,163 +12,184 @@ import argparse
 
 def get_options():
     
-    description = 'Utilities for processing, merging, and summarising rmre-seq data in the form of aligned .bed files'
+    description = "Utilities for processing, merging, and summarising rmre-seq data in the form of aligned .bed files"
     
     # Setting up the main parser object
     main_parser = argparse.ArgumentParser(description = description)
     
+    # initiat the subparser
     utilities_parser = main_parser.add_subparsers(title = "utilities", 
-                                                  dest = 'task')
+                                                  dest = "task")
 
-
-    parser_methyl = utilities_parser.add_parser("bed-to-CH4",
-                                        description="Convert alignment .bed file into .CH4.bed file")
-    parser_methyl.add_argument('-i', '--input',
-                        dest = 'bed_input',
+    # bed-to-CH4 arg parser
+    parser_CH4 = utilities_parser.add_parser("bed-to-CH4",
+                                        description = "Convert alignment .bed file into .CH4.bed file",
+                                        help = "Convert alignment .bed file into .CH4.bed file")
+    parser_CH4.add_argument("-i", "--input",
+                        dest = "bed_input",
                         type = str,
                         default = None,
                         required = True,
-                        help = 'input .bed file or rmre-seq aligned reads.')
-    parser_methyl.add_argument('-o', '--outfile',
-                               dest = 'outfile',
+                        help = "input .bed file or rmre-seq aligned reads.")
+    parser_CH4.add_argument("-o", "--outfile",
+                               dest = "CH4_out",
                                type = str,
                                default = None,
                                required = True,
-                               help = 'output file path for CH4 formatted .CH4.bed file.')
+                               help = "output file path for CH4 formatted .CH4.bed file.")
+    parser_CH4.add_argument("-d", "--header", 
+                            dest = "header_option", 
+                            action='store_true',
+                            help = "include header information in output file.")
+    parser_CH4.add_argument("-q", "--mapq_score", 
+                            dest = "mapq_score", 
+                            default = 0,
+                            type = int,
+                            help = "score (mapq) threshold for reporting read greater than (default = 0). Note: premapped read counts are used for calculating proportions.")
     
-
+    # merge-CH4 arg parser
     parser_merge = utilities_parser.add_parser("merge-CH4",
-                                        description="Merge multiple .CH4.bed files with/without a reference 'CCGG' gff set.")
-    parser_merge.add_argument('-r', '--reference',
-                        dest = 'reference',
+                                        description="Merge multiple .CH4.bed files with/without a reference 'CCGG' gff set.",
+                                        help = "Merge multiple .CH4.bed files with/without a reference 'CCGG' gff set.")
+    parser_merge.add_argument("-R", "--reference",
+                        dest = "reference",
                         type = str,
                         default = None,
                         required = False,
                         help = '''
-                                reference "CCGG" motif gff file. Assumes generated with emboss fuzznuc and takes the format:
+                                reference "CCGG" motif gff file. Assumes generated with emboss fuzznuc and takes the format:\n
                                 NC_056054.1     fuzznuc nucleotide_motif        85      88      4       +       .       ID=NC_056054.1.1;pattern=CCGG
                                 ''')
-    parser_merge.add_argument('-o', '--outfile',
-                        dest = 'outfile',
+    parser_merge.add_argument("-i", "--CH4bed",
+                        dest = "input",
+                        required = True,
+                        nargs = "*",
+                        help = "input .CH4.bed files; one or more required.")
+    parser_merge.add_argument("-o", "--outfile",
+                        dest = "outfile",
                         type = str,
                         required = True,
-                        help = 'output file path for the merged .CH4.bed.txt matrix.')
-    
-    
-    args = main_parser.parse_args()
+                        help = "output file path for the merged .CH4.bed.txt matrix.")
+    parser_merge.add_argument("-t", "--report",
+                        dest = "report",
+                        type = str,
+                        required = True,
+                        choices=['proportions', 'counts'],
+                        help = "values to report in .CH4.bed.txt matrix.")
 
+    
+    # check for no args and print help
+    if len(sys.argv)==1:
+        main_parser.print_help()
+        # parser.print_usage() # for just the usage line
+        sys.exit(1)
+        
+    # parse it
+    args = main_parser.parse_args()
+    print()
+    
+    # ship it
     return args
 
 
-
-def bedtomethyl(bedfile):
-    """ ('path/to/bedfile.bed') -> methylbed[]
-    :param bedfile: String; path to an input bedfile.
-    :return: dict[pos]; Tn5 insertion positions of all reads.
-
-    Parses a bedfile from Tn5 Tnseq and returns a list of
-    genomic coordinates offset by 9 bp for  Tn5 insertion positions.
-    Takes into account the strand the read was mapped to.
+def bedtoCH4(bed_file_path, threshold):
+    """ ("alignment.bed") -> CH4bed[]
+    :param .bed file: String; path to an input .bed file.
+    :return: .CH4.bed dataframe 
+    
+    Parses a .bed file from rmre-seq alignment. Then returns a dataframe of
+    all unique positions and their counts.
     """
-    # Open input bedfile
-    bedfileIn = open(bedfile, 'r')
+    import pandas as pd
+    # read in gzipped bed file
+    print()
+     
+    bed_file = pd.read_csv(bed_file_path,
+                           compression = "gzip",
+                           sep = "\t",
+                           names = ["chrom", "startChrom", "endChrom", "name", "score", "strand"],
+                           dtype = {"chrom":str, "startChrom":int, "endChrom":int, "name":str, "score":int, "strand":str},
+                           comment = "#")
+    
+    # log some metrics
+    total_reads = len(bed_file)
+    print("total reads in .bed file: " + str(total_reads))
+    
+    score_0 = len(bed_file[bed_file["score"] == 0])
+    print("reads filtered due to mapping score == 0 : " + str(score_0))
+    
+    bed_file = bed_file[bed_file["score"] > threshold ]
+    print("reads filtered with map score less than " + str(threshold) + ": " + str(total_reads - len(bed_file)))
 
-    # Process input bedfile
-    bedfileData = []
-    for line in bedfileIn:
-        items = line.rstrip('\r\n').split('\t')
-        items = [item.strip() for item in items]
-        bedfileData.append(items)
+    print("reads passing filter: " + str(len(bed_file)))
+    
+    
+    # split by strand
+    bed_file_plus = bed_file[bed_file["strand"] == "+"]
+    bed_file_minus = bed_file[bed_file["strand"] == "-"]
+    
+    # drop full file
+    del(bed_file)
 
-    # Process tntag start positions
-    tntagsList = []
-    i = 0
-    errors = 0
-    for line in bedfileData:
-        if str(line[5]) == '+':
-            position = int(line[1])
-            position = position + 1  # offsets python counting from 0
-            position = position + 9  # offsets 9 bp duplication from Tn5
-            tntagsList.append(position)
-            i += 1
-        elif str(line[5]) == '-':
-            position = int(line[2])
-            position = position - 1  # offsets python counting from 0
-            position = position - 9  # offsets 9 bp duplication from Tn5
-            tntagsList.append(position)
-            i += 1
-        else:
-            errors += 1
-    print("Reads processed " + str(i))
-    print("Errors " + str(errors))
+    # uniq counts of startChrom for '+'
+    CH4_file_plus = bed_file_plus.groupby(["chrom", "startChrom"]).size().reset_index(name='count')
+    CH4_file_plus["strand"] = "+"
+    CH4_file_plus["endChrom"] = CH4_file_plus["startChrom"] + 1
+    CH4_file_plus["name"] = CH4_file_plus["chrom"].transform(str) + "_" + CH4_file_plus["startChrom"].transform(str)
+    
+    # uniq counts of endChrom for '-'
+    CH4_file_minus = bed_file_minus.groupby(["chrom", "endChrom"]).size().reset_index(name='count')
+    CH4_file_minus["strand"] = "-"
+    CH4_file_minus["startChrom"] = CH4_file_minus["endChrom"] - 1
+    CH4_file_minus["name"] = CH4_file_minus["chrom"].transform(str) + "_" + CH4_file_minus["startChrom"].transform(str)
+    
+    # append counts back together
+    CH4_file = pd.concat([CH4_file_plus, CH4_file_minus], ignore_index=True, axis=0)
+    
+    # add "total" and proportion columns
+    CH4_file["total"] = CH4_file["count"].sum()
+    CH4_file["proportion"] = CH4_file["count"] / CH4_file["total"]
+    
+    # reorder and sort CH4_file
+    CH4_file = CH4_file[["chrom", "startChrom", "endChrom", "name", "count", "strand", "total", "proportion"]]
+    CH4_file = CH4_file.sort_values(by = ["chrom", "startChrom", "endChrom"], ascending = True)
+    
+    # ship it
+    return CH4_file
 
-    return tntagsList
-
-
-
-def splice_sample_names(args):
-    """
-    for each file, parse the filename to get sampleID and locusID,
-    then parse the file contents and splice these in and list, print
-    updated summary table to stdout.
-    """
-    for path in args["input_files"]:
-        # parse the filename to get sampleID and locusID parts
-        # e.g. from HERB01-A07-J11-65-14_S27_EPSPS.summary.txt we want to be
-        # able to extract HERB01-A07-J11-65-14  EPSPS try each regular
-        # expression (not case-sensitive) and use the first match
-        # (usually there will be only one regexp and usually the default)
-        sample_name = None
-        locus = None
-
-        for regexp in args["regexps"]:
-            match = re.search(regexp, os.path.basename(path), re.IGNORECASE)
-            if match is not None:
-                if len(match.groups()) == 2:
-                    (sample_name, locus) = match.groups()
-
-        if sample_name is None or locus is None:
-            raise Exception(
-                "Sorry could not parse sampleID and locusID from %s using any of : %s" % (
-                    path, str(args["regexps"])))
-
-        # now open file, parse contents and splice in sample name and locus
-        # file contents are like :
-        # more /dataset/gseq_processing/active/bin/gtseq_prism/unit_test/HERB01-A07-J11-65-14_S27_ACCase1999.summary.txt
-        # 0.0000  ATTCCCATGAGCGGTCTGTTCCTCGTGCTGGGCAAGTCTGGTTTCCAGATTCTGCTACCAAGACAGCGCAGGCAATGTTGGACTTCAA;size=2072      *       *       *       *       *       *       *       *       0       0   00       0       0       *       N
-        # 0.0000  ATTCCCATGAGCGGTCTGTTTCTCGTGCTGGGCAAGTCTGGTTTCCAGATTCTGCTACCAAGACAGCGCAGGCAATGTTGGACTTCAA;size=42        *       *       *       *       *       *       *       *       0       0   00       0       0       *       N
-        with open(path, "r") as savs:
-            record_count = 0
-            field_count = 0
-            for record in savs:
-                fields = re.split("\t", record.strip())
-                if record_count == 0:
-                    field_count = len(fields)
-                record_count += 1
-                # sanity check file - records should all be the same length
-                if len(fields) != field_count:
-                    raise Exception(
-                        "oops : in %s, first rec had %d fields, but record %d has %d fields" % (
-                            path, field_count, len(fields)))
-                allele_and_size = re.split(";", fields[1])
-                if len(allele_and_size) != 2:
-                    raise Exception(
-                        "oops : malformed sampleID field (%s) in record %d" %
-                        fields[1], record_count)
-                (allele, size) = allele_and_size
-                # output record , e.g. like CCCGATTGAGAAGGATGCCAAGGAGGAAGTAAAGCTCTTCTTGGGCAACGCTGGAACTGCAATGCGGCCATTGACGGCAGCTGTAGTAGCTGCTGGTGGA  size=1125  HERB01-A07-J11-65-14  EPSPS
-                print(allele, size, sample_name, locus, sep="\t")
-
+def mergeCH4():
+    #TODO: make this.
+    return
 
 def main():
-    get_options()
+    # parse CLI
+    args = get_options()
 
-    # if opts["task"] == "splice_sample_names":
-    #     splice_sample_names(opts)
-    # else:
-    #     raise Exception(
-    #         "Oops... --task %(splice_sample_names)s is not supported yet !" % opts)
-    return 0
+    # check 'task' and run accordingly.
+    if args.task == "bed-to-CH4":
+        # parse bed and return .CH4.bed formatted datframe
+        print("running bed-to-CH4 on: " + str(args.bed_input))
+        methylation = bedtoCH4(bed_file_path = args.bed_input, threshold = args.mapq_score)
+        
+        # print .CH4.bed file
+        print("writing .CH4.bed file to: " + str(args.CH4_out))
+        methylation.to_csv(args.CH4_out, sep = "\t", header = args.header_option, compression = "gzip", index = False, float_format="%.10f")
+        
+        print("""
+MIT License
+copyright (c) 2023 Benjamin J Perry
+version: 1.0.0
+email: ben.perry@agresearch.co.nz
+citation: TBD
+              """)
+        
+        sys.exit(0)
+    elif args["task"] == "merge-CH4":
+        raise Exception("merge-CH4 is not implemented at this time.\n")
+        sys.exit(1)
+    else:
+        raise Exception("task undefined. I'm not sure how you got to this point...\n")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
