@@ -164,6 +164,7 @@ def mergeCH4(reference, CH4beds, reporting):
     gff = pd.read_csv(reference,
                       sep = "\t",
                       names = ["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"], 
+                      compression= "gzip",
                       comment = "#")
     
     # split by strand and add 'name' for join
