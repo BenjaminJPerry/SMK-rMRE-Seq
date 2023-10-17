@@ -152,8 +152,8 @@ rule merge_CH4:
         "benchmarks/merge_CH4.txt"
     threads: 2
     resources:
-        mem_gb = lambda wildcards, attempt: 6 + ((attempt - 1) * 12),
-        time = lambda wildcards, attempt: 4 + ((attempt - 1) * 60),
+        mem_gb = lambda wildcards, attempt: 32 + ((attempt - 1) * 12),
+        time = lambda wildcards, attempt: 30 + ((attempt - 1) * 60),
         partition="compute"
     shell:
         "python scripts/rmre-seq.py "
