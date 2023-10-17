@@ -52,7 +52,7 @@ def get_options():
                                         description="Merge multiple .CH4.bed files with/without a reference 'CCGG' gff set.",
                                         help = "Merge multiple .CH4.bed files with/without a reference 'CCGG' gff set.")
     parser_merge.add_argument("-R", "--reference",
-                        dest = "reference",
+                        dest = "CH4_reference",
                         type = str,
                         default = None,
                         required = False,
@@ -61,9 +61,9 @@ def get_options():
                                 NC_056054.1     fuzznuc nucleotide_motif        85      88      4       +       .       ID=NC_056054.1.1;pattern=CCGG
                                 ''')
     parser_merge.add_argument("-i", "--CH4bed",
-                        dest = "input",
+                        dest = "CH4_inputs",
                         required = True,
-                        nargs = "*",
+                        nargs = "+",
                         help = "input .CH4.bed files; one or more required.")
     parser_merge.add_argument("-o", "--outfile",
                         dest = "outfile",
@@ -71,10 +71,10 @@ def get_options():
                         required = True,
                         help = "output file path for the merged .CH4.bed.txt matrix.")
     parser_merge.add_argument("-t", "--report",
-                        dest = "report",
+                        dest = "report_style",
                         type = str,
                         required = True,
-                        choices=['proportions', 'counts'],
+                        choices=['proportion', 'count'],
                         help = "values to report in .CH4.bed.txt matrix.")
 
     
@@ -135,13 +135,13 @@ def bedtoCH4(bed_file_path, threshold):
     CH4_file_plus = bed_file_plus.groupby(["chrom", "startChrom"]).size().reset_index(name='count')
     CH4_file_plus["strand"] = "+"
     CH4_file_plus["endChrom"] = CH4_file_plus["startChrom"] + 1
-    CH4_file_plus["name"] = CH4_file_plus["chrom"].transform(str) + "_" + CH4_file_plus["startChrom"].transform(str)
+    CH4_file_plus["name"] = CH4_file_plus["chrom"].transform(str) + "_" + CH4_file_plus["startChrom"].add(1).transform(str)
     
     # uniq counts of endChrom for '-'
     CH4_file_minus = bed_file_minus.groupby(["chrom", "endChrom"]).size().reset_index(name='count')
     CH4_file_minus["strand"] = "-"
     CH4_file_minus["startChrom"] = CH4_file_minus["endChrom"] - 1
-    CH4_file_minus["name"] = CH4_file_minus["chrom"].transform(str) + "_" + CH4_file_minus["startChrom"].transform(str)
+    CH4_file_minus["name"] = CH4_file_minus["chrom"].transform(str) + "_" + CH4_file_minus["endChrom"].transform(str)
     
     # append counts back together
     CH4_file = pd.concat([CH4_file_plus, CH4_file_minus], ignore_index=True, axis=0)
@@ -157,9 +157,66 @@ def bedtoCH4(bed_file_path, threshold):
     # ship it
     return CH4_file
 
-def mergeCH4():
-    #TODO: make this.
-    return
+
+def mergeCH4(reference, CH4beds, reporting):
+    # parse reference 'CCGG" gff file into scaffold
+    import pandas as pd
+    gff = pd.read_csv(reference,
+                      sep = "\t",
+                      names = ["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"], 
+                      comment = "#")
+    
+    # split by strand and add 'name' for join
+    gff_plus = gff[gff["strand"] == "+"]
+    gff_minus =gff[gff["strand"] == "-"]
+
+    del(gff)
+    
+    gff_plus["name"] =  gff_plus["seqid"].transform(str) + "_" + gff_plus["start"].add(1).round().transform(str) 
+    gff_minus["name"] =  gff_minus["seqid"].transform(str) + "_" + gff_minus["end"].sub(1).round().transform(str) 
+    ref_CH4 = pd.concat([gff_plus, gff_minus], ignore_index = True, axis = 0) 
+    
+    del(gff_plus)
+    del(gff_minus)
+    
+    ref_CH4 = ref_CH4.sort_values(by = ["seqid", "start"], ascending = True, )
+    ref_CH4 = ref_CH4[["seqid", "start", "end", "strand", "name"]]
+    
+    
+    # read in CH4bed file, join with reference scaffold
+    CH4 = ref_CH4[["name"]]
+    
+    for file in CH4beds:
+        CH4_bed = pd.read_csv(file,
+                                compression = "gzip",
+                                sep = "\t",
+                                names = ["chrom", "startChrom", "endChrom", "name", "count", "strand", "total", "proportion"],
+                                dtype = {"chrom":str, "startChrom":int, "endChrom":int, "name":str, "count":int, "strand":str, "total":int, "proportion":float},
+                                comment = "#")
+        # log some metrics
+        total_count = sum(CH4_bed["count"])
+        print("total counts in " + str(file) + ": " + str(total_count))
+        print("unique sites in " + str(file) + ": " + str(len(CH4_bed))) 
+        print("sum of proportions in " + str(file) + ": " + str(sum(CH4_bed["proportion"])))
+    
+    # parse values to be reported in matrix
+        if reporting == "proportion":
+                CH4_bed = CH4_bed[["name", "proportion"]]
+        elif reporting == "count":
+                CH4_bed = CH4_bed[["name", "count"]]
+        else:
+                raise Exception("invalid reporting parameter.\n")
+                sys.exit(1)
+                
+        CH4 = CH4.merge(CH4_bed, how = "left", on = "name")
+        CH4 = CH4.rename(columns={reporting: file})
+        CH4 = CH4.fillna(0)
+    
+    ref_CH4 = ref_CH4.merge(CH4, how = "left", on = "name")
+    
+    # shipt it
+    return CH4
+
 
 def main():
     # parse CLI
@@ -169,11 +226,18 @@ def main():
     if args.task == "bed-to-CH4":
         # parse bed and return .CH4.bed formatted datframe
         print("running bed-to-CH4 on: " + str(args.bed_input))
-        methylation = bedtoCH4(bed_file_path = args.bed_input, threshold = args.mapq_score)
+        
+        methylation = bedtoCH4(bed_file_path = args.bed_input, 
+                               threshold = args.mapq_score)
         
         # print .CH4.bed file
         print("writing .CH4.bed file to: " + str(args.CH4_out))
-        methylation.to_csv(args.CH4_out, sep = "\t", header = args.header_option, compression = "gzip", index = False, float_format="%.10f")
+        methylation.to_csv(args.CH4_out, 
+                           sep = "\t", 
+                           header = args.header_option, 
+                           compression = "gzip", 
+                           index = False, 
+                           float_format="%.10f")
         
         print("""
 MIT License
@@ -184,9 +248,33 @@ citation: TBD
               """)
         
         sys.exit(0)
-    elif args["task"] == "merge-CH4":
-        raise Exception("merge-CH4 is not implemented at this time.\n")
-        sys.exit(1)
+        
+    elif args.task == "merge-CH4":
+        print("running merge-CH4 on:")
+        for file in args.CH4_inputs:
+            print(file)
+        print()
+        
+        CH4 = mergeCH4(reference = args.CH4_reference, CH4beds = args.CH4_inputs, reporting = args.report_style)
+        
+        print()
+        print("writing CH4 " + str(args.report_style) + "s matrix file to: " + str(args.outfile))
+        CH4.to_csv(args.outfile, 
+                           sep = ",", 
+                           header = True, 
+                           index = False)
+        
+        
+        print("""
+MIT License
+copyright (c) 2023 Benjamin J Perry
+version: 1.0.0
+email: ben.perry@agresearch.co.nz
+citation: TBD
+        """)
+        
+        sys.exit(0)
+      
     else:
         raise Exception("task undefined. I'm not sure how you got to this point...\n")
         sys.exit(1)
