@@ -149,7 +149,7 @@ rule merge_CH4:
     conda:
         "rmre-seq"
     benchmark:
-        "benchmarks/merge_CH4.{library}.{barcode}.txt"
+        "benchmarks/merge_CH4.txt"
     threads: 2
     resources:
         mem_gb = lambda wildcards, attempt: 6 + ((attempt - 1) * 12),
