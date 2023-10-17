@@ -212,6 +212,8 @@ def mergeCH4(reference, CH4beds, reporting):
         CH4 = CH4.merge(CH4_bed, how = "left", on = "name")
         CH4 = CH4.rename(columns={reporting: file})
         CH4 = CH4.fillna(0)
+        
+        del(CH4_bed)
     
     ref_CH4 = ref_CH4.merge(CH4, how = "left", on = "name")
     
