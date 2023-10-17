@@ -38,9 +38,10 @@ wildcard_constraints:
 
 rule all:
     input:
-        expand("results/{library}/02_align/{library}.{barcode}.bam", library = LIBRARY, barcode = BARCODES),
-        expand("results/{library}/00_stats/{library}.{barcode}.bam.stats", library = LIBRARY, barcode = BARCODES),
-        expand("results/{library}/03_CH4/{library}.{barcode}.CH4.bed.gz", library = LIBRARY, barcode = BARCODES),
+        "results/merged.CH4.matrix.csv"
+        # expand("results/{library}/02_align/{library}.{barcode}.bam", library = LIBRARY, barcode = BARCODES),
+        # expand("results/{library}/00_stats/{library}.{barcode}.bam.stats", library = LIBRARY, barcode = BARCODES),
+        # expand("results/{library}/03_CH4/{library}.{barcode}.CH4.bed.gz", library = LIBRARY, barcode = BARCODES),
 
 
 rule bowtie2:
@@ -138,3 +139,26 @@ rule bed_to_CH4:
         "-q 20 "
         "-i {input.bed} "
         "-o {output.CH4} "
+
+
+rule merge_CH4:
+    input:
+        CH4_beds = expand("results/{library}/03_CH4/{library}.{barcode}.CH4.bed.gz", library = LIBRARY, barcode = BARCODES),
+    output:
+        CH4_matrix = "results/merged.CH4.matrix.csv",
+    conda:
+        "rmre-seq"
+    benchmark:
+        "benchmarks/merge_CH4.{library}.{barcode}.txt"
+    threads: 2
+    resources:
+        mem_gb = lambda wildcards, attempt: 6 + ((attempt - 1) * 12),
+        time = lambda wildcards, attempt: 4 + ((attempt - 1) * 60),
+        partition="compute"
+    shell:
+        "python scripts/rmre-seq.py "
+        "merge-CH4 "
+        "-t count
+        "-R resources/reference/GCF_016772045.1_CCGG_fuzznuc.gff " #TODO rule to make this file from fasta
+        "-i {input.CH4_beds} "
+        "-o (output.CH4_matrix) "
