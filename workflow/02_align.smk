@@ -158,7 +158,7 @@ rule merge_CH4:
     shell:
         "python scripts/rmre-seq.py "
         "merge-CH4 "
-        "-t count
+        "-t count "
         "-R resources/reference/GCF_016772045.1_CCGG_fuzznuc.gff " #TODO rule to make this file from fasta
         "-i {input.CH4_beds} "
         "-o (output.CH4_matrix) "
