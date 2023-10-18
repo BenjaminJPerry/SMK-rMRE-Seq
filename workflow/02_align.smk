@@ -135,7 +135,7 @@ rule bed_to_CH4:
     shell:
         "python scripts/rmre-seq.py "
         "bed-to-CH4 "
-        #"--header " #MUST suppress header for joining
+        #"--header " #MUST suppress header for joining with merge-CH4
         "-q 20 "
         "-i {input.bed} "
         "-o {output.CH4} "
@@ -152,7 +152,7 @@ rule merge_CH4:
         "benchmarks/merge_CH4.txt"
     threads: 2
     resources:
-        mem_gb = lambda wildcards, attempt: 32 + ((attempt - 1) * 12),
+        mem_gb = lambda wildcards, attempt: 64 + ((attempt - 1) * 64),
         time = lambda wildcards, attempt: 30 + ((attempt - 1) * 60),
         partition="compute"
     shell:
