@@ -15,7 +15,7 @@ default-resources:
   - account=2023-bjp-rmre-seq
   - partition=compute
   - time=120
-  - mem_gb=8
+  - mem_gb=32
 restart-times: 3
 local-cores: 6
 latency-wait: 1800
