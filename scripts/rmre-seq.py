@@ -193,7 +193,7 @@ def mergeCH4(reference, CH4beds, reporting):
                                 sep = "\t",
                                 names = ["chrom", "startChrom", "endChrom", "name", "count", "strand", "total", "proportion"],
                                 dtype = {"chrom":str, "startChrom":int, "endChrom":int, "name":str, "count":int, "strand":str, "total":int, "proportion":float},
-                                comment = "chrom")
+                                comment = "#")
         # log some metrics
         total_count = sum(CH4_bed["count"])
         print("total counts in " + str(file) + ": " + str(total_count))

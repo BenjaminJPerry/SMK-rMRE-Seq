@@ -135,7 +135,7 @@ rule bed_to_CH4:
     shell:
         "python scripts/rmre-seq.py "
         "bed-to-CH4 "
-        "--header "
+        #"--header " #MUST suppress header for joining
         "-q 20 "
         "-i {input.bed} "
         "-o {output.CH4} "
